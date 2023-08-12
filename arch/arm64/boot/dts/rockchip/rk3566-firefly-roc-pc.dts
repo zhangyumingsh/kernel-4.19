@@ -1,0 +1,232 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2020 Rockchip Electronics Co., Ltd.
+ *
+ */
+
+ /dts-v1/;
+
+#include "rk3566-firefly-roc-pc.dtsi"
+
+/*
+*								select camera
+*
+* using single camera xc7160        --->  rk3566-firefly-roc-pc-cam-8ms1m.dtsi
+* using dual camera gc2053/gc2093   --->  rk3566-firefly-roc-pc-cam-2ms2m.dtsi
+*
+*/
+//#include "rk3566-firefly-roc-pc-cam-8ms1m.dtsi"
+//#include "rk3566-firefly-roc-pc-mipi101_M101014_BE45_A1-cam_2ms2mf.dtsi"
+#include "rk3566-firefly-roc-pc-cam-2ms2m.dtsi"
+
+
+/ {
+    model = "Firefly RK3566-ROC-PC HDMI(Linux)";
+    compatible = "rockchip,rk3566-firefly-roc-pc", "rockchip,rk3566";
+};
+
+&route_hdmi {
+	status = "okay";//"disabled";
+	connect = <&vp1_out_hdmi>;
+};
+
+//dsi0
+
+&route_dsi0 {
+    status = "disabled";//"okay";
+    connect = <&vp0_out_dsi0>;
+};
+
+&video_phy0 {
+    status = "disabled";//"okay";
+};
+
+&dsi0_in_vp0 {
+    status = "disabled";//"okay";
+};
+
+&dsi0_in_vp1 {
+    status = "disabled";
+};
+
+//dsi1
+
+&route_dsi1 {
+    status = "okay";//"disabled";
+    connect = <&vp0_out_dsi1>;
+};
+
+&video_phy1 {
+    status = "okay";//"disabled";
+};
+
+&dsi1_in_vp0 {
+    status = "okay";//"disabled";
+};
+
+&dsi1_in_vp1 {
+    status = "disabled";
+};
+
+//hdmi
+
+&hdmi {
+	status = "okay";//"disabled";
+};
+
+&hdmi_in_vp0 {
+	status = "disabled";
+};
+
+&hdmi_in_vp1 {
+	status = "okay";//"disabled";
+};
+
+&hdmi_sound {
+	status = "disabled";
+};
+
+/*
+ * mipi_dphy0 needs to be enabled
+ * when dsi0 is enabled
+ */
+&dsi1 {
+    status = "okay";
+    //rockchip,lane-rate = <1000>;
+//   dsi1_panel: panel@0 {
+//      status = "okay";
+//      compatible = "raspberrypi,7inch-dsi";
+//      reg = <0>;
+//     // backlight = <&backlight_dsi1>;  
+//   
+//	enable-delay-ms = <35>;
+//	prepare-delay-ms = <6>;
+//	reset-delay-ms = <25>;
+//	init-delay-ms = <55>;
+//	unprepare-delay-ms = <0>;
+//	disable-delay-ms = <20>;
+//	mipi-data-delay-ms = <200>;			  
+//	dsi,lanes  = <2>;
+//   
+//      ports {
+//          #address-cells = <1>;
+//          #size-cells = <0>;
+//   
+//          port@0 {
+//              reg = <0>;
+//              panel_in: endpoint {
+//                  remote-endpoint = <&bridge_out>;
+//              };
+//          };
+//      };
+//};
+//
+//	bridge:bridge@0{
+//		reg = <0>;
+//		compatible = "toshiba,tc358762";
+//		//vddc-supply = <&reg_bridge>;
+//		ports {
+//					#address-cells = <1>;
+//					#size-cells = <0>;
+//
+//					port@0 {
+//						reg = <0>;
+//						bridge_in: endpoint {
+//							remote-endpoint = <&dsi1_out_bridge>;
+//						};
+//					};
+//
+//					port@1 {
+//						reg = <1>;
+//						bridge_out: endpoint {
+//							remote-endpoint = <&panel_in>;
+//						};
+//					};
+//		};
+//
+//	};
+dsi1_panel: dsi-panel@0 {
+				compatible = "raspits,tc358762";
+				reg = <0x0>;
+				status = "okay";
+
+				ports {
+					#address-cells = <1>;
+					#size-cells = <0>;
+
+					port@0 {
+						reg = <0>;
+						panel_in_dsi1: endpoint {
+							remote-endpoint = <&dsi1_out_bridge>;
+						};
+					};
+				};
+	};
+
+	
+    ports {
+        #address-cells = <1>;
+        #size-cells = <0>;
+
+        port@1 {
+            reg = <1>;
+            dsi1_out_bridge: endpoint {
+                remote-endpoint = <&panel_in_dsi1>;
+            };
+        };
+	};
+};
+
+&i2c2 {
+	status = "okay";
+	pinctrl-names = "default";
+	clock-frequency = <100000>;
+	pinctrl-0 = <&i2c2m1_xfer>;
+	avdd-1v8-supply = <&vcca1v8_image>;
+	avdd-0v9-supply = <&vdda0v9_image>;
+	power-domains = <&power RK3568_PD_VI>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+	backlight_dsi1:backlight@45{ /*背光地址0x45*/
+		compatible = "raspberrypi,7inch-touchscreen-panel-regulator";
+		reg = <0x45>;
+		status = "okay";
+    };
+	ft5x06_ts@38 { /*触屏地址0x38*/
+		compatible = "edt,edt-ft5x06", "ft5x06";
+		reg = <0x38>;
+		interrupt-parent = <&gpio0>;
+		interrupts = <13 IRQ_TYPE_LEVEL_LOW>;
+		power-domains = <&power RK3568_PD_VI>;
+		reset-gpios = <&gpio0 RK_PB6 GPIO_ACTIVE_LOW>;
+		touchscreen-size-x = < 800 >;
+		touchscreen-size-y = < 480 >;
+		status = "okay";
+	};
+/*ov5647地址0x36*/
+	ov5647@36 {
+		status = "okay";
+		compatible = "ovti,ov5647";
+		reg = <0x36>;
+		clocks = <&cru CLK_CAM0_OUT>;
+		//pinctrl-0 = <&cam_clkout0>;//double clk
+		clock-names = "xvclk";
+		pinctrl-names = "default";
+		pinctrl-0 = <&cam_clkout0>; //怎么选？
+		power-domains = <&power RK3568_PD_VI>;
+		avdd-0v9-supply = <&vdda0v9_image>;
+		avdd-1v8-supply = <&vcca1v8_image>; /* reset-gpio gpio4 b1 pwdn-gpios gpio4 c5 */
+		power-gpios = <&gpio3 RK_PC3 GPIO_ACTIVE_HIGH>;
+		/*power-domains = <&power RK3568_PD_VI>;*/
+		/*pwdn-gpios = <&gpio3 RK_PC3 GPIO_ACTIVE_HIGH>; reset-gpios  gpios? pwdn-gpios? power-gpios = <&gpio3 RK_PC3 GPIO_ACTIVE_HIGH>; 驱动没有操作IO需要修改*/
+		port {
+			ov5647_out: endpoint {
+				remote-endpoint = <&dphy1_in>;//double use dphy1_in single use mipi_in_ucam3
+                data-lanes = <1 2>;
+            };
+        };
+	};
+};
+
+
+

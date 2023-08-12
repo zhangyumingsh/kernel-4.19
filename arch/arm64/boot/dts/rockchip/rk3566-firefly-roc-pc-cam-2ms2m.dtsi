@@ -1,0 +1,252 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2020 Rockchip Electronics Co., Ltd.
+ *
+ */
+
+&can2 {
+	status = "disabled";
+};
+
+&rkisp {
+	status = "okay";
+};
+
+&rkisp_mmu {
+	status = "okay";
+};
+
+&rkisp_vir0 {
+	status = "okay";
+	port {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		isp0_in: endpoint@0 {
+			reg = <0>;
+			remote-endpoint = <&dphy1_out>;
+		};
+	};
+};
+
+&rkisp_vir1 {
+	status = "okay";
+	port {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		isp1_in: endpoint@0 {
+			reg = <0>;
+			remote-endpoint = <&mipi_lvds_sditf>;
+		};
+	};
+};
+
+&csi2_dphy_hw {
+	status = "okay";
+};
+
+&csi2_dphy0 {
+	status = "disabled";
+};
+
+&csi2_dphy1 {
+	status = "okay";
+	/*
+	 * dphy1 only used for split mode,
+	 * can be used concurrently with dphy2
+	 * full mode and split mode are mutually exclusive
+	 */
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@0 {
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			dphy1_in: endpoint@1 {
+				reg = <1>;
+				remote-endpoint = <&ov5647_out>;
+				data-lanes = <1 2>;
+			};
+		};
+
+		port@1 {
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			dphy1_out: endpoint@1 {
+				reg = <1>;
+				remote-endpoint = <&isp0_in>;
+			};
+		};
+	};
+};
+
+&csi2_dphy2 {
+	status = "okay";
+	/*
+	 * dphy2 only used for split mode,
+	 * can be used concurrently with dphy1
+	 * full mode and split mode are mutually exclusive
+	 */
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@0 {
+			reg = <0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			dphy2_in: endpoint@1 {
+				reg = <1>;
+				//remote-endpoint = <&gc2093_out>;
+				data-lanes = <1 2>;
+			};
+		};
+
+		port@1 {
+			reg = <1>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			dphy2_out: endpoint@1 {
+				reg = <1>;
+				remote-endpoint = <&mipi_csi2_input>;
+			};
+		};
+	};
+};
+
+&mipi_csi2 {
+    status = "okay";
+
+    ports {
+        #address-cells = <1>;
+        #size-cells = <0>;
+
+        port@0 {
+            reg = <0>;
+            #address-cells = <1>;
+            #size-cells = <0>;
+
+            mipi_csi2_input: endpoint@1 {
+                    reg = <1>;
+                    remote-endpoint = <&dphy2_out>;
+                    data-lanes = <1 2>;
+            };
+        };
+
+        port@1 {
+            reg = <1>;
+            #address-cells = <1>;
+            #size-cells = <0>;
+
+            mipi_csi2_output: endpoint@0 {
+                    reg = <0>;
+                    remote-endpoint = <&cif_mipi_in>;
+                    data-lanes = <1 2>;
+            };
+        };
+    };
+};
+
+&rkcif_mipi_lvds {
+    status = "okay";
+    port {
+        cif_mipi_in: endpoint {
+            remote-endpoint = <&mipi_csi2_output>;
+            data-lanes = <1 2>;
+        };
+    };
+};
+
+&rkcif_mipi_lvds_sditf {
+    status = "okay";
+    port {
+        mipi_lvds_sditf: endpoint {
+            remote-endpoint = <&isp1_in>;
+            data-lanes = <1 2>;
+        };
+    };
+};
+
+&rkcif_mmu {
+    status = "okay";
+};
+
+&rkcif {
+    status = "okay";
+};
+
+&i2c2 {
+	status = "okay";
+	pinctrl-names = "default";
+	clock-frequency = <100000>;
+	pinctrl-0 = <&i2c2m1_xfer>;
+	avdd-1v8-supply = <&vcca1v8_image>;
+	avdd-0v9-supply = <&vdda0v9_image>;
+	power-domains = <&power RK3568_PD_VI>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+	backlight_dsi1:backlight@45{ /*背光地址0x45*/
+		compatible = "raspberrypi,7inch-touchscreen-panel-regulator";
+		reg = <0x45>;
+		status = "okay";
+    };
+	ft5x06_ts@38 { /*触屏地址0x38*/
+		compatible = "edt,edt-ft5x06", "ft5x06";
+		reg = <0x38>;
+		interrupt-parent = <&gpio0>;
+		interrupts = <13 IRQ_TYPE_LEVEL_LOW>;
+		power-domains = <&power RK3568_PD_VI>;
+		reset-gpios = <&gpio0 RK_PB6 GPIO_ACTIVE_LOW>;
+		touchscreen-size-x = < 800 >;
+		touchscreen-size-y = < 480 >;
+		status = "okay";
+	};
+/*ov5647地址0x36*/
+	ov5647@36 {
+		status = "okay";
+		compatible = "ovti,ov5647";
+		reg = <0x36>;
+		clocks = <&cru CPLL_25M>;
+		//pinctrl-0 = <&cam_clkout0>;//double clk
+		clock-names = "xvclk";
+		pinctrl-names = "default";
+		pinctrl-0 = <&refclk_pins>; //怎么选？
+		power-domains = <&power RK3568_PD_VI>;
+		avdd-0v9-supply = <&vdda0v9_image>;
+		avdd-1v8-supply = <&vcca1v8_image>; /* reset-gpio gpio4 b1 pwdn-gpios gpio4 c5 */
+		power-gpios = <&gpio3 RK_PC3 GPIO_ACTIVE_HIGH>;
+		/*power-domains = <&power RK3568_PD_VI>;*/
+		/*pwdn-gpios = <&gpio3 RK_PC3 GPIO_ACTIVE_HIGH>; reset-gpios  gpios? pwdn-gpios? power-gpios = <&gpio3 RK_PC3 GPIO_ACTIVE_HIGH>; 驱动没有操作IO需要修改*/
+		port {
+			ov5647_out: endpoint {
+				remote-endpoint = <&dphy1_in>;//double use dphy1_in single use mipi_in_ucam3
+                data-lanes = <1 2>;
+            };
+        };
+	};
+};
+
+
+&flash_led {
+	status = "okay";
+};
+
+&vcc_camera {
+	status = "okay";
+	gpio = <&gpio4 RK_PC1 GPIO_ACTIVE_HIGH>;
+	/delete-property/ pinctrl-names;
+	/delete-property/ pinctrl-0;
+};
+
+&pwm11 {
+	status = "okay";
+	pinctrl-0 = <&pwm11m1_pins>;
+};
